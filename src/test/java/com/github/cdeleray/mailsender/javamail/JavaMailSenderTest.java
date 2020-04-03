@@ -80,10 +80,10 @@ public class JavaMailSenderTest {
 
     JavaMailSender sender = new JavaMailSender("lalala");
     sender.addText("<html><head><title/></head><body><b>HELLO</b></body></html>")
-          .addRecipient("cdeleray@gmail.com")
-          .addRecipient("cdeleray@gmail.com")
-          .addRecipient("cdeleray@gmail.com")
-          .addRecipientCC("cdeleray@hotmail.fr")
+          .addRecipient("deleray@gmail.com")
+          .addRecipient("deleray@gmail.com")
+          .addRecipient("deleray@gmail.com")
+          .addRecipientCC("deleray@hotmail.com")
           .setSubject("HA HA HA en texte accentué!")
           .addFile(file.toFile())
           .addFile("hi.txt", file.toFile())
