@@ -107,15 +107,15 @@ public abstract class AbstractMailSender implements MailSender {
   }
 
   @Override
-  public MailSender addImage(String imageId, byte[] imageContent, String mimeType) {
-    namedMimeTypedImages.put(imageId, new Object[] { imageContent.clone(), mimeType });
+  public MailSender addImage(String cid, byte[] imageContent, String mimeType) {
+    namedMimeTypedImages.put(cid, new Object[] { imageContent.clone(), mimeType });
     setHtmlMode();
     return this;
   }
 
   @Override
-  public MailSender addImage(String imageId, File imageFile) {
-    images.put(imageId, imageFile);
+  public MailSender addImage(String cid, File imageFile) {
+    images.put(cid, imageFile);
     setHtmlMode();
     return this;
   }
