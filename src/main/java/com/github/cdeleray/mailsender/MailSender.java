@@ -80,33 +80,34 @@ public interface MailSender {
   MailSender addFile(String fileName, byte[] fileContent, String mimeType);
 
   /**
-   * Adds an image to sent, specifying its identifier as its appears within
+   * Adds an image to sent, specifying its "Content-ID" as its appears within
    * the HTML body of the mail (e.g in {@literal <img src="cid:id" ... />}).
    * <p>
    * Calling this method make this {@code MailSender} to send HTML content
    * by using the {@link #setHtmlMode()} method.
    * 
-   * @param imageId the image identifier as in this HTML snippet :
-   * {@literal <img src="cid:id" ... />}
+   * @param cid the "Content-ID" value associated with the image as in
+   *            {@literal <img src="cid:id" ... />}
    * @param imageFile the file corresponding to the image
    * @return this {@code MailSender} object
    */
-  MailSender addImage(String imageId, File imageFile);
+  MailSender addImage(String cid, File imageFile);
   
   /**
-   * Adds an image to sent, specifying its identifier as its appears within
+   * Adds an image to sent, specifying its "Content-ID" as its appears within
    * the HTML body of the mail (e.g in {@code <img src="cid:<em>id</em>" ... />}),
    * and its MIME type
    * <p>
    * Calling this method make this {@code MailSender} to send HTML content
    * by using the {@link #setHtmlMode()} method.
-   * 
-   * @param imageId the image identifier as in this HTML snippet : {@code <img src="cid:<em>id</em>" ... />}
+   *
+   * @param cid the "Content-ID" value associated with the image as in
+   *            {@literal <img src="cid:id" ... />}
    * @param imageContent the image content
    * @param mimeType the MIME type of the image
    * @return this {@code MailSender} object
    */
-  MailSender addImage(String imageId, byte[] imageContent, String mimeType);
+  MailSender addImage(String cid, byte[] imageContent, String mimeType);
   
   /**
    * Adds the specified recipient address.
