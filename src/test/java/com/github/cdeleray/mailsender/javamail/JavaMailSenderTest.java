@@ -152,7 +152,7 @@ public class JavaMailSenderTest {
     for (int i = 0, len = mimeMultipart.getCount(); i < len; i++) {
       BodyPart bodyPart = mimeMultipart.getBodyPart(i);
 
-      if (mimeType.equals(bodyPart.getDataHandler().getContentType())) {
+      if (bodyPart.isMimeType(mimeType)) {
         bodyParts.add(bodyPart);
       }
     }
@@ -211,10 +211,8 @@ public class JavaMailSenderTest {
 
     BodyPart textBodyPart = bodyPart(mimeMultipart, "text/html").orElseThrow(AssertionError::new);
 
-    assertTrue((textBodyPart instanceof MimeBodyPart));
-
-    MimeBodyPart textMimeBodyPart = (MimeBodyPart) textBodyPart;
-
     assertEquals(textBodyPart.getContent(), htmlContent);
+
+    //continue ...
   }
 }
