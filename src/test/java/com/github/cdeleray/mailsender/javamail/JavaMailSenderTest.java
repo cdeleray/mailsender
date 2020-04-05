@@ -36,7 +36,6 @@ import javax.mail.MessagingException;
 import javax.mail.event.TransportEvent;
 import javax.mail.event.TransportListener;
 import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import java.io.ByteArrayOutputStream;
@@ -190,6 +189,8 @@ public class JavaMailSenderTest {
         .addTransportListener(transportListener)
         .send();
 
+    assertNotNull(transportEvent);
+
     Message message = transportEvent.getMessage();
 
     assertEquals(message.getFrom(), array(from));
@@ -213,6 +214,7 @@ public class JavaMailSenderTest {
 
     assertEquals(textBodyPart.getContent(), htmlContent);
 
+    assertEquals(countBodyPart(mimeMultipart, "text/plain"), 5);
     //continue ...
   }
 }
