@@ -24,23 +24,31 @@
 
 package com.github.cdeleray.mailsender.javamail;
 
-import org.testng.annotations.*;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import javax.activation.FileTypeMap;
 import javax.mail.Address;
+import javax.mail.BodyPart;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.event.TransportEvent;
 import javax.mail.event.TransportListener;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
-import static javax.mail.Message.RecipientType.*;
+import static javax.mail.Message.RecipientType.CC;
+import static javax.mail.Message.RecipientType.TO;
 import static org.testng.Assert.*;
 
 /**
@@ -63,6 +71,7 @@ public class JavaMailSenderTest {
   private String recipient2;
   private String recipientCC;
   private String htmlContent;
+  private String smtpHost;
 
   @BeforeClass
   void beforeClass() throws IOException {
@@ -102,6 +111,7 @@ public class JavaMailSenderTest {
     recipient2 = "john2.doe@unknown.com";
     recipientCC = "jane.doe@unknown.com";
     htmlContent = "<html><head><title/></head><body><b>HELLO</b></body></html>";
+    smtpHost = "dummy";
   }
 
   @AfterMethod
@@ -112,15 +122,59 @@ public class JavaMailSenderTest {
   private Address[] array(String... adresses) throws MessagingException {
     Address[] adr = new Address[adresses.length];
 
-    for(int i = 0; i < adr.length; i++) {
+    for (int i = 0; i < adr.length; i++) {
       adr[i] = new InternetAddress(adresses[i]);
     }
 
     return adr;
   }
 
+  /** Counts the number of {@link BodyPart} instances with the given
+   * MIME type and contained within the given {@link MimeMultipart}. */
+  private int countBodyPart(MimeMultipart mimeMultipart, String mimeType) throws MessagingException {
+    int count = 0;
+    for (int i = 0, len = mimeMultipart.getCount(); i < len; i++) {
+      BodyPart bodyPart = mimeMultipart.getBodyPart(i);
+
+      if (mimeType.equals(bodyPart.getDataHandler().getContentType())) {
+        ++count;
+      }
+    }
+
+    return count;
+  }
+
+  /** Returns the {@link BodyPart} instances with the given
+   * MIME type and contained within the given {@link MimeMultipart}. */
+  private List<BodyPart> bodyParts(MimeMultipart mimeMultipart, String mimeType) throws MessagingException {
+    List<BodyPart> bodyParts = new ArrayList<>();
+
+    for (int i = 0, len = mimeMultipart.getCount(); i < len; i++) {
+      BodyPart bodyPart = mimeMultipart.getBodyPart(i);
+
+      if (mimeType.equals(bodyPart.getDataHandler().getContentType())) {
+        bodyParts.add(bodyPart);
+      }
+    }
+
+    return bodyParts;
+  }
+
+  /** Returns the first {@link BodyPart} instance with the given
+   * MIME type and contained within the given {@link MimeMultipart}. */
+  private Optional<BodyPart> bodyPart(MimeMultipart mimeMultipart, String mimeType) throws MessagingException {
+    List<BodyPart> bodyParts = bodyParts(mimeMultipart, mimeType);
+    return bodyParts.isEmpty() ? Optional.empty() : Optional.of(bodyParts.get(0));
+  }
+
+  /**
+   * Tests {@link JavaMailSender#send()} method for an HTML-based email.
+   *
+   * @throws Exception if any error occurs
+   */
   public void testSendHtml() throws Exception {
-    new JavaMailSender("dummy")
+    new JavaMailSender(smtpHost)
+        .setHtmlMode()
         .setSubject(subject)
         .setFrom(from)
         .addRecipient(recipient)
@@ -150,10 +204,17 @@ public class JavaMailSenderTest {
 
     assertTrue(content instanceof  MimeMultipart);
 
-    MimeMultipart mimeMultipart = (MimeMultipart)content;
+    MimeMultipart mimeMultipart = (MimeMultipart) content;
 
     assertEquals(mimeMultipart.getCount(), 6);
+    assertEquals(countBodyPart(mimeMultipart, "text/html"), 1);
 
-    //continue...
+    BodyPart textBodyPart = bodyPart(mimeMultipart, "text/html").orElseThrow(AssertionError::new);
+
+    assertTrue((textBodyPart instanceof MimeBodyPart));
+
+    MimeBodyPart textMimeBodyPart = (MimeBodyPart) textBodyPart;
+
+    assertEquals(textBodyPart.getContent(), htmlContent);
   }
 }
