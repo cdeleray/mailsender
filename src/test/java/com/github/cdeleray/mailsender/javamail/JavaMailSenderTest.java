@@ -24,74 +24,136 @@
 
 package com.github.cdeleray.mailsender.javamail;
 
+import org.testng.annotations.*;
+
 import javax.activation.FileTypeMap;
-import javax.mail.event.TransportAdapter;
+import javax.mail.Address;
+import javax.mail.Message;
+import javax.mail.MessagingException;
 import javax.mail.event.TransportEvent;
 import javax.mail.event.TransportListener;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+
+import static javax.mail.Message.RecipientType.*;
+import static org.testng.Assert.*;
 
 /**
  * Test class for {@link JavaMailSender}.
  *
  * @author Christophe Deleray
  */
+@Test
 public class JavaMailSenderTest {
-  public static void main(String[] args) throws Exception {
-    Path file = Files.createTempFile("tmp", ".txt");
+  private Path file;
+  private Path file2;
+  private FileTypeMap fileTypeMap;
+  private byte[] data;
+  private TransportListener transportListener;
+  private TransportEvent transportEvent;
+
+  private String subject;
+  private String from;
+  private String recipient;
+  private String recipient2;
+  private String recipientCC;
+  private String htmlContent;
+
+  @BeforeClass
+  void beforeClass() throws IOException {
+    file = Files.createTempFile("tmp", ".txt");
     file.toFile().deleteOnExit();
 
-    Path file2 = Files.createTempFile("tmp", ".txt");
+    file2 = Files.createTempFile("tmp", ".txt");
     file2.toFile().deleteOnExit();
 
     Files.writeString(file, "hello world!");
     Files.writeString(file2, "hello world!");
 
-    FileTypeMap ftm = FileTypeMap.getDefaultFileTypeMap();
+    fileTypeMap = FileTypeMap.getDefaultFileTypeMap();
 
     ByteArrayOutputStream bout = new ByteArrayOutputStream();
     Files.copy(file, bout);
-    byte[] data = bout.toByteArray();
+    data = bout.toByteArray();
 
-    TransportListener transportListener = new TransportAdapter() {
+    transportListener = new TransportListener() {
       @Override
       public void messageDelivered(TransportEvent e) {
-        System.out.println("message delivered!");
-        System.out.println("\tvalid sent adresses: " + Arrays.toString(e.getValidSentAddresses()));
+        transportEvent = e;
       }
-
       @Override
       public void messageNotDelivered(TransportEvent e) {
-        System.out.println("message not delivered!");
-        System.out.println("\tinvalid adresses: " + Arrays.toString(e.getInvalidAddresses()));
-        System.out.println("\tvalid unsent adresses: " + Arrays.toString(e.getValidUnsentAddresses()));
+        transportEvent = e;
       }
-
       @Override
       public void messagePartiallyDelivered(TransportEvent e) {
-        System.out.println("message partially delivered!");
-        System.out.println("\tinvalid adresses: " + Arrays.toString(e.getInvalidAddresses()));
-        System.out.println("\tvalid sent adresses: " + Arrays.toString(e.getValidSentAddresses()));
-        System.out.println("\tvalid unsent adresses: " + Arrays.toString(e.getValidUnsentAddresses()));
+        transportEvent = e;
       }
     };
 
-    JavaMailSender sender = new JavaMailSender("lalala");
-    sender.addText("<html><head><title/></head><body><b>HELLO</b></body></html>")
-          .addRecipient("deleray@gmail.com")
-          .addRecipient("deleray@gmail.com")
-          .addRecipient("deleray@gmail.com")
-          .addRecipientCC("deleray@hotmail.com")
-          .setSubject("HA HA HA en texte accentué!")
-          .addFile(file.toFile())
-          .addFile("hi.txt", file.toFile())
-          .addFile("hi.txt", file2.toFile())
-          .addFile("hello.txt", data, ftm.getContentType(file.toFile()))
-          .addFile("hello2.txt", data, ftm.getContentType(file.toFile()))
-          .setFrom("devine.qui.cest.fr")
-          .addTransportListener(transportListener)
-          .send();
+    from = "me.myslef@and.i.com";
+    subject = "here, some accents : ééééé àààààà";
+    recipient = "john.doe@unknown.com";
+    recipient2 = "john2.doe@unknown.com";
+    recipientCC = "jane.doe@unknown.com";
+    htmlContent = "<html><head><title/></head><body><b>HELLO</b></body></html>";
+  }
+
+  @AfterMethod
+  void afterMethod() {
+    transportEvent = null;
+  }
+
+  private Address[] array(String... adresses) throws MessagingException {
+    Address[] adr = new Address[adresses.length];
+
+    for(int i = 0; i < adr.length; i++) {
+      adr[i] = new InternetAddress(adresses[i]);
+    }
+
+    return adr;
+  }
+
+  public void testSendHtml() throws Exception {
+    new JavaMailSender("dummy")
+        .setSubject(subject)
+        .setFrom(from)
+        .addRecipient(recipient)
+        .addRecipient(recipient)
+        .addRecipient(recipient2)
+        .addRecipientCC(recipientCC)
+        .addText(htmlContent)
+        .addFile(file.toFile())
+        .addFile("hi.txt", file.toFile())
+        .addFile("hi.txt", file2.toFile())
+        .addFile("hello.txt", data, fileTypeMap.getContentType(file.toFile()))
+        .addFile("hello2.txt", data, fileTypeMap.getContentType(file2.toFile()))
+        .addTransportListener(transportListener)
+        .send();
+
+    Message message = transportEvent.getMessage();
+
+    assertEquals(message.getFrom(), array(from));
+    assertEquals(message.getSubject(), subject);
+    assertEquals(message.getRecipients(TO), array(recipient, recipient2));
+    assertEquals(message.getRecipients(CC), array(recipientCC));
+
+    assertTrue(message instanceof MimeMessage);
+
+    MimeMessage mimeMessage = (MimeMessage)message;
+    Object content = mimeMessage.getContent();
+
+    assertTrue(content instanceof  MimeMultipart);
+
+    MimeMultipart mimeMultipart = (MimeMultipart)content;
+
+    assertEquals(mimeMultipart.getCount(), 6);
+
+    //continue...
   }
 }
