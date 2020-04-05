@@ -71,6 +71,7 @@ public class JavaMailSender extends AbstractMailSender {
    * network connection. */
   private Authenticator authenticator;
 
+  /** Will create {@link MimeBodyPart} instances. */
   private final MimeBodyPartFactory mimeBodyPartFactory = new MimeBodyPartFactory();
 
   /**
@@ -124,6 +125,8 @@ public class JavaMailSender extends AbstractMailSender {
     Transport transport = null;
 
     try {
+      MimeMultipart multipart = new MimeMultipart();
+
       MimeBodyPart textPart = new MimeBodyPart();
 
       if(textMode) {
@@ -136,8 +139,7 @@ public class JavaMailSender extends AbstractMailSender {
           throw new MessagingException(e.getMessage(), e);
         }
       }
-  
-      MimeMultipart multipart = new MimeMultipart();      
+
       multipart.addBodyPart(textPart);
   
       for (Map.Entry<String, Collection<File>> e : namedFiles.entrySet()) {
@@ -204,8 +206,7 @@ public class JavaMailSender extends AbstractMailSender {
       if (transport != null) {
         try {
           transport.close();
-        } catch (MessagingException e) {
-          throw new IllegalStateException("Cannot close the Transport object.", e);
+        } catch (MessagingException ignore) {
         }
       }
     } 
